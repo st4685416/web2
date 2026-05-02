@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обмін Валют</title>
+    <style>
+        /* Базові налаштування сторінки */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f5f7;
+            color: #333;
+            margin: 0;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Контейнер для панелей */
+        .app-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* Стилі панелей */
+        .panel {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .left-panel { width: 35%; }
+        .right-panel { width: 65%; }
+
+        h2 { text-align: center; margin-top: 0; }
+        h3 { color: #555; font-size: 16px; margin-bottom: 10px;}
+
+        /* Список валют (Ліва панель) */
+        .currency-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .currency-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .currency-item:last-child {
+            border-bottom: none;
+        }
+
+        .currency-rate {
+            font-weight: bold;
+        }
+
+        /* Конвертер (Права панель) */
+        .converter-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .converter-block:last-child {
+            border-bottom: none;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        input[readonly] {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Ліва панель – Інформер -->
+        <div class="panel left-panel">
+            <h2 id="current-date-title">Курс валют на 
+                <span id="current-date">...</span>
+            </h2>
+            <ul class="currency-list" id="currency-list">
+                <li class="currency-item">Завантаження...</li>
+            </ul>
+        </div>
+
+        <!-- Права панель – Конвертер -->
+        <div class="panel right-panel">
+            <h2>Конвертер валют</h2>
+
+            <!-- Блок 1: З іноземної валюти в гривні -->
+            <div class="converter-block">
+                <h3>З іноземної в гривні</h3>
+                <div class="input-group">
+                    <input type="number" id="amount-foreign" placeholder="Сума" min="0" step="any">
+                    
+                    <input list="currency-select" id="currency-input" placeholder="Виберіть валюту">
+                    <datalist id="currency-select">
+                        <!-- Сюди через JS додадуться <option> -->
+                    </datalist>
+                    
+                    <span>→</span>
+                    
+                    <input type="number" id="amount-uah" readonly placeholder="Гривні" step="any">
+                </div>
+            </div>
+
+            <!-- Блок 2: З гривень в іноземну валюту -->
+            <div class="converter-block">
+                <h3>З гривень в іноземну</h3>
+                <div class="input-group">
+                    <input type="number" id="amount-uah-input" placeholder="Гривні" min="0" step="any">
+					
+					<span>→</span>
+
+                    <input list="currency-select" id="currency-output-select" placeholder="Виберіть валюту">
+                    
+                    <input type="number" id="amount-foreign-result" readonly placeholder="Сума" step="any">
+                </div>
+            </div>
+
+        </div>
+        
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. КОНСТАНТИ
+        // ==========================================
+        const API_URL = 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json';
+        const DECIMAL_PLACES = 2;
+
+        // ==========================================
+        // 2. ІНІЦІАЛІЗАЦІЯ
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+        });
+
+        function initApp() {
+            setTodayDate();
+            fetchCurrencyData();
+            setupEventListeners();
+        }
+
+        function setTodayDate() {
+            const today = new Date();
+            document.getElementById('current-date').textContent = today.toLocaleDateString('uk-UA');
+        }
+
+        function fetchCurrencyData() {
+            fetch(API_URL)
+                .then(response => {
+                    if (!response.ok) throw new Error('Помилка мережі');
+                    return response.json();
+                })
+                .then(data => {
+                    renderCurrencyList(data);
+                    populateDatalist(data);
+                })
+                .catch(err => console.error('Помилка завантаження даних:', err));
+        }
+
+        // ==========================================
+        // 3. ВІДОБРАЖЕННЯ ДАНИХ У DOM
+        // ==========================================
+        function renderCurrencyList(data) {
+            const list = document.getElementById('currency-list');
+            list.innerHTML = ''; 
+
+            data.forEach(currency => {
+                const li = document.createElement('li');
+                li.className = 'currency-item';
+                li.innerHTML = `
+                    <span class="currency-name">${currency.cc} - ${currency.txt}</span>
+                    <span class="currency-rate">${currency.rate.toFixed(DECIMAL_PLACES)} грн</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function populateDatalist(data) {
+            const datalist = document.getElementById('currency-select');
+            datalist.innerHTML = ''; 
+
+            data.forEach(currency => {
+                const option = document.createElement('option');
+                option.value = currency.cc;
+                option.text = currency.txt;
+                option.dataset.rate = currency.rate; 
+                datalist.appendChild(option);
+            });
+        }
+
+        // ==========================================
+        // 4. ЛОГІКА КОНВЕРТЕРА
+        // ==========================================
+
+        // Допоміжна функція для отримання курсу з datalist
+        function getRateFromDatalist(currencyCode) {
+            const datalist = document.getElementById('currency-select');
+            const selectedOption = Array.from(datalist.options).find(opt => opt.value === currencyCode);
+            return selectedOption ? parseFloat(selectedOption.dataset.rate) : null;
+        }
+
+        // Функція для розрахунку
+        function calculateConversion(amountId, currencyId, resultId, isMultiplier) {
+            const amountStr = document.getElementById(amountId).value;
+            const currencyCode = document.getElementById(currencyId).value;
+            const resultField = document.getElementById(resultId);
+
+            const amount = parseFloat(amountStr);
+            const rate = getRateFromDatalist(currencyCode);
+
+            // Перевірка на коректність даних
+            if (!isNaN(amount) && rate) {
+                // isMultiplier === true: іноземна -> гривні (множення)
+                // isMultiplier === false: гривні -> іноземна (ділення)
+                const result = isMultiplier ? (amount * rate) : (amount / rate);
+                resultField.value = result.toFixed(DECIMAL_PLACES);
+            } else {
+                resultField.value = '';
+            }
+        }
+
+        // Обробники для кожного блоку
+        function handleForeignToUah() {
+            calculateConversion('amount-foreign', 'currency-input', 'amount-uah', true);
+        }
+
+        function handleUahToForeign() {
+            calculateConversion('amount-uah-input', 'currency-output-select', 'amount-foreign-result', false);
+        }
+
+        // ==========================================
+        // 5. НАЛАШТУВАННЯ ПОДІЙ
+        // ==========================================
+
+        // Функція підключення слухачів
+        function setupConverterListeners(amountInputId, currencySelectId, handlerFunction) {
+            const amountInput = document.getElementById(amountInputId);
+            const currencySelect = document.getElementById(currencySelectId);
+
+            // Викликаємо функцію-обробник при введенні суми або зміні валюти
+            amountInput.addEventListener('input', handlerFunction);
+            currencySelect.addEventListener('change', handlerFunction);
+            currencySelect.addEventListener('input', handlerFunction);
+        }
+
+        function setupEventListeners() {
+            // Підключаємо Блок 1
+            setupConverterListeners('amount-foreign', 'currency-input', handleForeignToUah);
+            // Підключаємо Блок 2
+            setupConverterListeners('amount-uah-input', 'currency-output-select', handleUahToForeign);
+        }
+    </script>
+</body>
+</html>
