@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обмін Валют</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+	<div class="app-container">
+		
+		<!-- Ліва панель – Інформер -->
+		<div class="panel left-panel">
+			<h2 id="current-date-title">Курс валют на 
+				<span id="current-date">...</span>
+			</h2>
+			<ul class="currency-list" id="currency-list">
+				<li class="currency-item">Завантаження...</li>
+			</ul>
+		</div>
+
+		<!-- Права панель – Конвертер -->
+		<div class="panel right-panel">
+			<h2>Конвертер валют</h2>
+
+			<!-- Блок 1: З іноземної валюти в гривні -->
+			<div class="converter-block">
+				<h3>З іноземної в гривні</h3>
+				<div class="input-group">
+					<input type="number" id="amount-foreign" placeholder="Сума" min="0" step="any">
+					
+					<input list="currency-select" id="currency-input" placeholder="Виберіть валюту">
+					<datalist id="currency-select">
+						<!-- Сюди через JS додадуться <option> -->
+					</datalist>
+					
+					<span>→</span>
+					
+					<input type="number" id="amount-uah" readonly placeholder="Гривні" step="any">
+				</div>
+			</div>
+
+			<!-- Блок 2: З гривень в іноземну валюту -->
+			<div class="converter-block">
+				<h3>З гривень в іноземну</h3>
+				<div class="input-group">
+					<input type="number" id="amount-uah-input" placeholder="Гривні" min="0" step="any">
+					
+					<span>→</span>
+
+					<input list="currency-select" id="currency-output-select" placeholder="Виберіть валюту">
+					
+					<input type="number" id="amount-foreign-result" readonly placeholder="Сума" step="any">
+				</div>
+			</div>
+			<!-- Блок історії курсу валюти -->
+			<div class="converter-block" style="margin-top: 30px;">
+				<h3 id="history-title">Курс валюти за тиждень</h3>
+				<div id="history-output">
+					<p>Виберіть валюту зі списку зліва</p>
+				</div>
+			</div>
+
+		</div>
+
+		
+	</div>
+
+	<script src="script.js"></script>
+</body>
+</html>
