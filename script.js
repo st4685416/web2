@@ -4,6 +4,8 @@ const uncheckedCountSpan = document.getElementById('unchecked-count')
 
 let todos = JSON.parse(localStorage.getItem('mostSecretKey')) || [];
 
+const _render={All:()=>{render();updateCounter()},AllAndSaveData:()=>{_render.All();saveTodos()}}
+
 _render.All()
 
 let maxId = todos.length ? todos.reduce((id, item) => item.id > id ? item.id : id, 0) : 0;
@@ -37,16 +39,16 @@ function render(arrayOfTodos = todos) {
 
 function updateCounter() {
 	itemCountSpan.textContent = todos.length.toString()
-	uncheckedCountSpan.textContent = todos.reduce((count, item) => count + !item.checked, 0)
+	uncheckedCountSpan.textContent = todos.reduce((count, item) => count + !item.checked, 0).toString()
 }
 
 function deleteTodo(id) {
-	todos = todos.filter(item => item.id != id);
+	todos = todos.filter(item => item.id !== id);
 	_render.AllAndSaveData()
 }
 
 function checkTodo(id) {
-	const item = todos.find(item => item.id == id);
+	const item = todos.find(item => item.id === id);
 	item.checked = !item.checked;
 	_render.AllAndSaveData()
 }
@@ -54,5 +56,3 @@ function checkTodo(id) {
 function saveTodos() {
 	localStorage.setItem('mostSecretKey', JSON.stringify(todos))
 }
-
-_render={All:()=>{render();updateCounter()},AllAndSaveData:()=>{_render.All();saveTodos()}}
